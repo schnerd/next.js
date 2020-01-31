@@ -93,6 +93,26 @@ export default (context, render) => {
           }
         }
       })
+
+      it.only('should render the component Head into iframe', async () => {
+        let browser
+        try {
+          browser = await webdriver(context.appPort, '/dynamic/head-frame')
+          const parentContent = await browser
+            .elementByCss('meta[name="parent-frame"]')
+            .getAttribute('content')
+          expect(parentContent).toBe('success')
+          await browser.switchTo().frame(0)
+          const iframeContent = await browser
+            .elementByCss('meta[name="iframe"]')
+            .getAttribute('content')
+          expect(iframeContent).toBe('success')
+        } finally {
+          if (browser) {
+            await browser.close()
+          }
+        }
+      })
     })
     describe('ssr:false option', () => {
       it('should not render loading on the server side', async () => {
