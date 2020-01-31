@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { Component } from 'react'
 import withSideEffect from './side-effect'
 import { AmpStateContext } from './amp-context'
 import { HeadManagerContext } from './head-manager-context'
@@ -151,24 +151,45 @@ const Effect = withSideEffect()
  * This component injects elements to `<head>` of your page.
  * To avoid duplicated `tags` in `<head>` you can use the `key` property, which will make sure every tag is only rendered once.
  */
-function Head({ children }: { children: React.ReactNode }) {
-  return (
-    <AmpStateContext.Consumer>
-      {ampState => (
-        <HeadManagerContext.Consumer>
-          {updateHead => (
-            <Effect
-              reduceComponentsToState={reduceComponents}
-              handleStateChange={updateHead}
-              inAmpMode={isInAmpMode(ampState)}
-            >
-              {children}
-            </Effect>
-          )}
-        </HeadManagerContext.Consumer>
-      )}
-    </AmpStateContext.Consumer>
-  )
+class Head extends React.Component<{
+  children: React.ReactNode
+  document?: HTMLDocument | null
+}> {
+  _updateHead: any
+  _lastDocument?: HTMLDocument
+
+  // Creates a memoized version of updateHead, bound tot he latest document value
+  bindUpdateHead(updateHead: any) {
+    const { document } = this.props
+    if (document !== this._lastDocument) {
+      this._updateHead = (arg: any) => {
+        updateHead(arg, document)
+      }
+      this._lastDocument = document
+    }
+    return this._updateHead || updateHead
+  }
+
+  render() {
+    const { children } = this.props
+    return (
+      <AmpStateContext.Consumer>
+        {ampState => (
+          <HeadManagerContext.Consumer>
+            {updateHead => (
+              <Effect
+                reduceComponentsToState={reduceComponents}
+                handleStateChange={this.bindUpdateHead(updateHead)}
+                inAmpMode={isInAmpMode(ampState)}
+              >
+                {children}
+              </Effect>
+            )}
+          </HeadManagerContext.Consumer>
+        )}
+      </AmpStateContext.Consumer>
+    )
+  }
 }
 
 Head.rewind = Effect.rewind

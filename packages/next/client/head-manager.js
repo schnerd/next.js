@@ -10,16 +10,16 @@ export default class HeadManager {
     this.updatePromise = null
   }
 
-  updateHead = head => {
+  updateHead = (head, doc) => {
     const promise = (this.updatePromise = Promise.resolve().then(() => {
       if (promise !== this.updatePromise) return
 
       this.updatePromise = null
-      this.doUpdateHead(head)
+      this.doUpdateHead(head, doc || document)
     }))
   }
 
-  doUpdateHead(head) {
+  doUpdateHead(head, doc) {
     const tags = {}
     head.forEach(h => {
       const components = tags[h.type] || []
@@ -27,25 +27,25 @@ export default class HeadManager {
       tags[h.type] = components
     })
 
-    this.updateTitle(tags.title ? tags.title[0] : null)
+    this.updateTitle(tags.title ? tags.title[0] : null, doc)
 
     const types = ['meta', 'base', 'link', 'style', 'script']
     types.forEach(type => {
-      this.updateElements(type, tags[type] || [])
+      this.updateElements(type, tags[type] || [], doc)
     })
   }
 
-  updateTitle(component) {
+  updateTitle(component, doc) {
     let title = ''
     if (component) {
       const { children } = component.props
       title = typeof children === 'string' ? children : children.join('')
     }
-    if (title !== document.title) document.title = title
+    if (title !== doc.title) doc.title = title
   }
 
-  updateElements(type, components) {
-    const headEl = document.getElementsByTagName('head')[0]
+  updateElements(type, components, doc) {
+    const headEl = doc.getElementsByTagName('head')[0]
     const headCountEl = headEl.querySelector('meta[name=next-head-count]')
     if (process.env.NODE_ENV !== 'production') {
       if (!headCountEl) {
